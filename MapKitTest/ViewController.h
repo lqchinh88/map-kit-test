@@ -10,7 +10,7 @@
 #import <MapKit/MapKit.h>
 #import "NodeCollection.h"
 
-@interface ViewController : UIViewController <MKMapViewDelegate>
+@interface ViewController : UIViewController <MKMapViewDelegate,NSURLConnectionDelegate>
 
 @property (weak, nonatomic) IBOutlet MKMapView *mapView;
 @property NodeCollection *nodeCollection;

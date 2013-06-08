@@ -13,6 +13,6 @@
 
 @property NSMutableArray *nodeArray;
 
--(void) loadNodeArrayFrom:(NSString*) loadURL fromFileIfFail:(NSString*) fileName;
+-(void)parseJsonData:(NSData*) jsonData;
 
 @end

@@ -12,6 +12,7 @@
 
 @implementation NodeCollection
 
+
 -(id)init
 {
     if (self = [super init])
@@ -21,27 +22,8 @@
     return self;
 }
 
--(void) loadNodeArrayFrom:(NSString *)loadURL fromFileIfFail:(NSString *)fileName
+-(void)parseJsonData:(NSData*) jsonData
 {
-    // Check for internet connection
-    Reachability* reach = [Reachability reachabilityWithHostname:@"www.google.com"];
-    NSData* jsonData;
-    
-    if ( [reach isReachable] )
-    {
-        // Load json data from web
-            NSURL *searchURL = [NSURL URLWithString:loadURL];
-            jsonData = [NSData dataWithContentsOfURL:searchURL];
-    } else
-    {
-        // Load json data from file
-            NSURL *localURL = [[NSBundle mainBundle]
-                        URLForResource: fileName withExtension:@"json"];
-            NSString *path = [localURL path];
-            jsonData = [[NSFileManager defaultManager] contentsAtPath:path];
-    }
-    
-    // Parse the json data
     if ( jsonData != nil )
     {
         // Get data into an array
@@ -59,7 +41,8 @@
             [[self nodeArray] addObject:newNode];
         }
     }
-
 }
+
+
 
 @end

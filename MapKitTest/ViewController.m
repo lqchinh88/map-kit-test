@@ -7,6 +7,7 @@
 //
 
 #import "ViewController.h"
+#import "Reachability.h"
 
 #define METERS_PER_MILE 1609.344
 
@@ -15,27 +16,63 @@
 @end
 
 @implementation ViewController
+{
+    NSMutableData *_responseData;
+}
 
 - (void)viewDidLoad
 {
     [super viewDidLoad];
 
     // Load nodes and display annotations
-    [self loadNodes];
-    [self displayNodes];
+    [self loadAndDisplayNodes];
     
-    // Zoom to fit all annotations
-    [self zoomToFitMapAnnotations:_mapView];
 }
 
 // ------------------------------------------------------------
 // Class methods
 // ------------------------------------------------------------
 
--(void)loadNodes
+-(void)loadAndDisplayNodes
 {
     _nodeCollection = [[NodeCollection alloc ]init];
-    [_nodeCollection loadNodeArrayFrom:@"https://dl.dropboxusercontent.com/u/11295402/MiniEval/locations.json" fromFileIfFail:@"nodes"];
+    NSString *loadURL = @"https://dl.dropboxusercontent.com/u/11295402/MiniEval/locations.json";
+    NSString *fileName = @"nodes";
+    
+    // Check for internet connection
+    Reachability* reach = [Reachability reachabilityWithHostname:@"www.google.com"];
+    NSData* jsonData;
+    
+    if ( [reach isReachable] )
+    {
+        // Load json data from web
+        NSURL *searchURL = [NSURL URLWithString:loadURL];
+        jsonData = [NSData dataWithContentsOfURL:searchURL];
+        
+        // Create the request.
+        NSURLRequest *request = [NSURLRequest requestWithURL:searchURL];
+        
+        // Create url connection and fire asynchronous request
+        NSURLConnection *conn = [[NSURLConnection alloc] init];
+        (void)[conn initWithRequest:request delegate:self];
+        
+    } else
+    {
+        // Load json data from file
+        NSURL *localURL = [[NSBundle mainBundle]
+                           URLForResource: fileName withExtension:@"json"];
+        NSString *path = [localURL path];
+        jsonData = [[NSFileManager defaultManager] contentsAtPath:path];
+        
+        // Parse
+        [_nodeCollection parseJsonData:jsonData];
+        
+        // Display nodes
+        [self displayNodes];
+        
+        // Zoom to fit all annotations
+        [self zoomToFitMapAnnotations:_mapView];
+    }
 }
 
 -(void)displayNodes
@@ -85,7 +122,7 @@
 }
 
 // ------------------------------------------------------------
-// MKMapViewDelegate methods
+#pragma mark MKMapViewDelegate methods
 // ------------------------------------------------------------
 
 - (MKAnnotationView *)mapView:(MKMapView *)mapView viewForAnnotation:(Node*)annotation
@@ -116,6 +153,39 @@
 {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
+}
+
+// ------------------------------------------------------------
+#pragma mark NSURLConnection Delegate Methods
+// ------------------------------------------------------------
+
+- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
+    _responseData = [[NSMutableData alloc] init];
+}
+
+- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
+    [_responseData appendData:data];
+}
+
+- (NSCachedURLResponse *)connection:(NSURLConnection *)connection
+                  willCacheResponse:(NSCachedURLResponse*)cachedResponse {
+    // Return nil to indicate not necessary to store a cached response for this connection
+    return nil;
+}
+
+- (void)connectionDidFinishLoading:(NSURLConnection *)connection {
+    // Begin parsing after finishing receiving data
+    [_nodeCollection parseJsonData:_responseData];
+
+    // Display nodes
+    [self displayNodes];
+    
+    // Zoom to fit all annotations
+    [self zoomToFitMapAnnotations:_mapView];
+}
+
+- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
+    NSLog(@"Error");
 }
 
 @end
